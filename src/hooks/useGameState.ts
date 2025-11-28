@@ -10,18 +10,29 @@ const HAPPINESS_DECAY = 5;
 const ENERGY_DECAY = 2;
 
 export interface GameState {
-    hunger: number; // 0-100 (0 = starving, 100 = full)
-    happiness: number; // 0-100 (0 = sad, 100 = happy)
-    energy: number; // 0-100 (0 = exhausted, 100 = energetic)
+    moisture: number; // 0-100 (HP). 40-80 is "Steam Zone". <40 Dried out, >80 Soggy.
+    fullness: number; // 0-100 (Hunger).
+    hygiene: number; // 0-100 (Stickiness). Lower hygiene = faster moisture decay.
+    flavor: {
+        spicy: number;
+        sweet: number;
+        salty: number;
+    };
     lastSavedTime: number;
 }
 
 const INITIAL_STATE: GameState = {
-    hunger: 50,
-    happiness: 80,
-    energy: 80,
+    moisture: 60, // Start in the ideal zone
+    fullness: 50,
+    hygiene: 80,
+    flavor: { spicy: 0, sweet: 0, salty: 0 },
     lastSavedTime: Date.now(),
 };
+
+// Decay rates (points per hour)
+const MOISTURE_DECAY_BASE = 5;
+const FULLNESS_DECAY = 10;
+const HYGIENE_DECAY = 2;
 
 export const useGameState = () => {
     const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
@@ -30,12 +41,17 @@ export const useGameState = () => {
 
     const calculateDecay = (state: GameState, timeDiffMs: number): GameState => {
         const hoursPassed = timeDiffMs / (1000 * 60 * 60);
+        
+        // Hygiene affects moisture decay. Lower hygiene (sticky/moldy) -> faster moisture loss.
+        // If hygiene is 100, multiplier is 1. If hygiene is 0, multiplier is 2.
+        const hygieneMultiplier = 1 + (1 - state.hygiene / 100);
+        const moistureDecay = MOISTURE_DECAY_BASE * hygieneMultiplier;
 
         return {
             ...state,
-            hunger: Math.max(0, state.hunger - (HUNGER_DECAY * hoursPassed)),
-            happiness: Math.max(0, state.happiness - (HAPPINESS_DECAY * hoursPassed)),
-            energy: Math.max(0, state.energy - (ENERGY_DECAY * hoursPassed)),
+            moisture: Math.max(0, state.moisture - (moistureDecay * hoursPassed)),
+            fullness: Math.max(0, state.fullness - (FULLNESS_DECAY * hoursPassed)),
+            hygiene: Math.max(0, state.hygiene - (HYGIENE_DECAY * hoursPassed)),
             lastSavedTime: Date.now(),
         };
     };
@@ -47,10 +63,15 @@ export const useGameState = () => {
                 const saved = await AsyncStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    const now = Date.now();
-                    const timeDiff = now - parsed.lastSavedTime;
-                    const decayedState = calculateDecay(parsed, timeDiff);
-                    setGameState(decayedState);
+                    // Migration check: if old keys exist, reset or map them. For now, just reset if keys don't match.
+                    if (parsed.moisture === undefined) {
+                         setGameState(INITIAL_STATE);
+                    } else {
+                        const now = Date.now();
+                        const timeDiff = now - parsed.lastSavedTime;
+                        const decayedState = calculateDecay(parsed, timeDiff);
+                        setGameState(decayedState);
+                    }
                 }
             } catch (e) {
                 console.error('Failed to load state', e);
@@ -107,29 +128,38 @@ export const useGameState = () => {
     }, []);
 
     const feed = useCallback(() => {
-        setGameState(prev => ({
-            ...prev,
-            hunger: Math.min(100, prev.hunger + 20),
-            happiness: Math.min(100, prev.happiness + 5),
-        }));
+        setGameState(prev => {
+            // Random flavor for now
+            const flavors = ['spicy', 'sweet', 'salty'] as const;
+            const randomFlavor = flavors[Math.floor(Math.random() * flavors.length)];
+            
+            return {
+                ...prev,
+                fullness: Math.min(100, prev.fullness + 20),
+                flavor: {
+                    ...prev.flavor,
+                    [randomFlavor]: prev.flavor[randomFlavor] + 1
+                }
+            };
+        });
     }, []);
 
     const play = useCallback(() => {
         setGameState(prev => ({
             ...prev,
-            happiness: Math.min(100, prev.happiness + 15),
-            energy: Math.max(0, prev.energy - 10),
-            hunger: Math.max(0, prev.hunger - 5),
+            moisture: Math.min(100, prev.moisture + 10), // Sweating increases moisture
+            hygiene: Math.max(0, prev.hygiene - 10), // Gets sticky
+            fullness: Math.max(0, prev.fullness - 5),
         }));
     }, []);
 
-    const sleep = useCallback(() => {
+    const clean = useCallback(() => {
         setGameState(prev => ({
             ...prev,
-            energy: Math.min(100, prev.energy + 30),
-            hunger: Math.max(0, prev.hunger - 5),
+            hygiene: Math.min(100, prev.hygiene + 30),
+            // Cleaning might slightly reduce moisture if we wipe it? Let's keep it simple for now.
         }));
     }, []);
 
-    return { gameState, feed, play, sleep, isLoaded };
+    return { gameState, feed, play, clean, isLoaded };
 };

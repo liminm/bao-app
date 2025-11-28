@@ -6,7 +6,7 @@ const IMAGES = {
   happy: require('../assets/images/bao-happy.png'),
   love: require('../assets/images/bao-love.png'),
   surprised: require('../assets/images/bao-surprised.png'),
-  winking: require('../assets/images/bao-winking.jpg'),
+  winking: require('../assets/images/bao-winking.png'),
   spicy: require('../assets/images/bao-spicy.png'),
 };
 
@@ -58,21 +58,25 @@ export const BaoCharacter: React.FC<Props> = ({ gameState, interaction }) => {
   const getImage = () => {
     if (interaction === 'play') return IMAGES.love;
     if (interaction === 'feed') return IMAGES.happy;
-    if (interaction === 'sleep') return IMAGES.winking;
+    if (interaction === 'sleep') return IMAGES.winking; // Sleep is now Clean, but keeping the interaction name for now until Controls update
 
-    if (gameState.happiness > 80) return IMAGES.love;
-    if (gameState.hunger < 30) return IMAGES.surprised;
-    
+    // State based images
+    if (gameState.moisture < 40) return IMAGES.surprised; // Dried out
+    if (gameState.moisture > 80) return IMAGES.winking; // Soggy
+    if (gameState.hygiene < 30) return IMAGES.spicy; // Dirty/Moldy
+
+    if (gameState.moisture >= 40 && gameState.moisture <= 80) return IMAGES.love; // Ideal Steam Zone
+
     return IMAGES.happy;
   };
 
   return (
     <View style={styles.container}>
       <Animated.View style={{ transform: [{ translateY }, { scale }] }}>
-        <Image 
-          source={getImage()} 
-          style={styles.image} 
-          resizeMode="contain" 
+        <Image
+          source={getImage()}
+          style={styles.image}
+          resizeMode="contain"
         />
       </Animated.View>
     </View>

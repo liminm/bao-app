@@ -6,10 +6,10 @@ import { StatsDisplay } from './src/components/StatsDisplay';
 import { Controls } from './src/components/Controls';
 
 export default function App() {
-  const { gameState, feed, play, sleep, isLoaded } = useGameState();
-  const [interaction, setInteraction] = useState<'feed' | 'play' | 'sleep' | null>(null);
+  const { gameState, feed, play, clean, isLoaded } = useGameState();
+  const [interaction, setInteraction] = useState<'feed' | 'play' | 'clean' | null>(null);
 
-  const handleInteraction = useCallback((type: 'feed' | 'play' | 'sleep', action: () => void) => {
+  const handleInteraction = useCallback((type: 'feed' | 'play' | 'clean', action: () => void) => {
     action();
     setInteraction(type);
     setTimeout(() => setInteraction(null), 2000);
@@ -26,22 +26,22 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       <View style={styles.header}>
         <Text style={styles.title}>Bao</Text>
         <Text style={styles.subtitle}>Your Dumpling Friend</Text>
       </View>
 
       <View style={styles.characterArea}>
-        <BaoCharacter gameState={gameState} interaction={interaction} />
+        <BaoCharacter gameState={gameState} interaction={interaction === 'clean' ? 'sleep' : interaction} />
       </View>
 
       <View style={styles.bottomPanel}>
         <StatsDisplay gameState={gameState} />
-        <Controls 
+        <Controls
           onFeed={() => handleInteraction('feed', feed)}
           onPlay={() => handleInteraction('play', play)}
-          onSleep={() => handleInteraction('sleep', sleep)}
+          onClean={() => handleInteraction('clean', clean)}
         />
       </View>
     </SafeAreaView>

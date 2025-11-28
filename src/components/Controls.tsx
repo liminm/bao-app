@@ -10,7 +10,7 @@ interface Props {
 }
 
 const ActionButton = ({ onPress, icon: Icon, label, color }: any) => (
-  <TouchableOpacity 
+  <TouchableOpacity
     onPress={() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onPress();
@@ -22,12 +22,20 @@ const ActionButton = ({ onPress, icon: Icon, label, color }: any) => (
   </TouchableOpacity>
 );
 
-export const Controls: React.FC<Props> = ({ onFeed, onPlay, onSleep }) => {
+export const Controls: React.FC<Props> = ({ onFeed, onPlay, onClean }) => {
   return (
     <View style={styles.container}>
-      <ActionButton onPress={onFeed} icon={Utensils} label="Feed" color="#F97316" />
-      <ActionButton onPress={onPlay} icon={Gamepad2} label="Play" color="#EC4899" />
-      <ActionButton onPress={onSleep} icon={Moon} label="Sleep" color="#3B82F6" />
+      <TouchableOpacity style={[styles.button, styles.feedButton]} onPress={onFeed}>
+        <Text style={styles.buttonText}>Feed</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.button, styles.playButton]} onPress={onPlay}>
+        <Text style={styles.buttonText}>Play</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.button, styles.cleanButton]} onPress={onClean}>
+        <Text style={styles.buttonText}>Clean</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -35,27 +43,33 @@ export const Controls: React.FC<Props> = ({ onFeed, onPlay, onSleep }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
+    justifyContent: 'space-evenly',
     paddingHorizontal: 16,
-    marginBottom: 32,
   },
   button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    minWidth: 100,
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 16,
-    width: 96,
-    height: 96,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 3,
+  },
+  feedButton: {
+    backgroundColor: '#F97316',
+  },
+  playButton: {
+    backgroundColor: '#EC4899',
+  },
+  cleanButton: {
+    backgroundColor: '#8B5CF6', // Purple for clean
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
-    marginTop: 8,
+    fontSize: 16,
   },
 });
