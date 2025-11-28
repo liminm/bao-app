@@ -1,13 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withRepeat, 
-  withSequence, 
-  withTiming, 
-  Easing 
-} from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { View, Image, StyleSheet, Animated } from 'react-native';
 import { GameState } from '../hooks/useGameState';
 
 const IMAGES = {
@@ -24,32 +16,44 @@ interface Props {
 }
 
 export const BaoCharacter: React.FC<Props> = ({ gameState, interaction }) => {
-  const translateY = useSharedValue(0);
-  const scale = useSharedValue(1);
+  const translateY = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
 
+  // Breathing animation
   useEffect(() => {
-    translateY.value = withRepeat(
-      withSequence(
-        withTiming(-10, { duration: 1000, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 1000, easing: Easing.inOut(Easing.quad) })
-      ),
-      -1,
-      true
-    );
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(translateY, {
+          toValue: -10,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   }, []);
 
+  // Interaction animation
   useEffect(() => {
     if (interaction) {
-      scale.value = withSequence(
-        withTiming(1.2, { duration: 100 }),
-        withTiming(1, { duration: 100 })
-      );
+      Animated.sequence([
+        Animated.timing(scale, {
+          toValue: 1.2,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   }, [interaction]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
-  }));
 
   const getImage = () => {
     if (interaction === 'play') return IMAGES.love;
@@ -64,7 +68,7 @@ export const BaoCharacter: React.FC<Props> = ({ gameState, interaction }) => {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={animatedStyle}>
+      <Animated.View style={{ transform: [{ translateY }, { scale }] }}>
         <Image 
           source={getImage()} 
           style={styles.image} 
