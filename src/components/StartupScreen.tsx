@@ -49,7 +49,7 @@ export const StartupScreen: React.FC<Props> = ({ onStart }) => {
 
                 <View style={styles.imageContainer}>
                     <Image
-                        source={require('../../assets/images/bao-happy.png')}
+                        source={require('../assets/images/bao-happy.png')}
                         style={styles.image}
                         resizeMode="contain"
                     />

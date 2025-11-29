@@ -10,6 +10,7 @@ import { EvolutionOverlay } from './src/components/EvolutionOverlay';
 import { RollingPin } from './src/components/RollingPin';
 
 import { StartupScreen } from './src/components/StartupScreen';
+import { LoadingScreen } from './src/components/LoadingScreen';
 
 export default function App() {
   const { gameState, feed, pourWater, swapLeaf, flatten, evolve, resetGame, isLoaded, STAGE_1_DURATION } = useGameState();
@@ -66,12 +67,12 @@ export default function App() {
     }
   }, [flatten]);
 
+
+
+  // ... (inside App component)
+
   if (!isLoaded) {
-    return (
-      <View style={styles.loading}>
-        <Text style={styles.loadingText}>Waking up Bao...</Text>
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   if (!gameStarted) {
