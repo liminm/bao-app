@@ -12,25 +12,26 @@ const IMAGES = {
 
 interface Props {
   gameState: GameState;
-  interaction?: 'feed' | 'play' | 'sleep' | null;
+  interaction?: string | null;
 }
 
 export const BaoCharacter: React.FC<Props> = ({ gameState, interaction }) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
 
   // Breathing animation
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(translateY, {
-          toValue: -5, // Reduced from -10
-          duration: 2000, // Slower breathing (was 1000)
+          toValue: -5,
+          duration: 2000,
           useNativeDriver: true,
         }),
         Animated.timing(translateY, {
           toValue: 0,
-          duration: 2000, // Slower breathing (was 1000)
+          duration: 2000,
           useNativeDriver: true,
         }),
       ])
@@ -43,38 +44,50 @@ export const BaoCharacter: React.FC<Props> = ({ gameState, interaction }) => {
       if (interaction === 'flatten') {
         // Squish animation for flattening
         Animated.sequence([
-          Animated.timing(scale, {
-            toValue: 1.1, // Wider
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 0.9, // Flatter
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: true,
-          }),
+          Animated.timing(scale, { toValue: 1.1, duration: 100, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }),
+        ]).start();
+      } else if (interaction === 'feed-flour' || interaction === 'feed-spice') {
+        // Shake animation (Dusting)
+        Animated.sequence([
+          Animated.timing(rotate, { toValue: 1, duration: 50, useNativeDriver: true }),
+          Animated.timing(rotate, { toValue: -1, duration: 50, useNativeDriver: true }),
+          Animated.timing(rotate, { toValue: 1, duration: 50, useNativeDriver: true }),
+          Animated.timing(rotate, { toValue: -1, duration: 50, useNativeDriver: true }),
+          Animated.timing(rotate, { toValue: 0, duration: 50, useNativeDriver: true }),
+        ]).start();
+      } else if (interaction === 'feed-water') {
+        // Wobble/Ripple animation
+        Animated.sequence([
+          Animated.timing(scale, { toValue: 1.05, duration: 150, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1.02, duration: 150, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }),
+        ]).start();
+      } else if (interaction === 'feed-filling') {
+        // Heavy Bounce (Squash down then up)
+        Animated.sequence([
+          Animated.timing(translateY, { toValue: 10, duration: 100, useNativeDriver: true }), // Squash down
+          Animated.timing(scale, { toValue: 1.1, duration: 100, useNativeDriver: true }), // Widen
+          Animated.timing(translateY, { toValue: -10, duration: 150, useNativeDriver: true }), // Jump up
+          Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: 0, duration: 100, useNativeDriver: true }),
         ]).start();
       } else {
+        // Standard Bounce (Happy)
         Animated.sequence([
-          Animated.timing(scale, {
-            toValue: 1.2,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: true,
-          }),
+          Animated.timing(scale, { toValue: 1.2, duration: 100, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }),
         ]).start();
       }
     }
   }, [interaction]);
+
+  const rotateInterpolate = rotate.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-5deg', '5deg'],
+  });
 
   const getImage = () => {
     // Stage 0: Dough
@@ -134,7 +147,7 @@ export const BaoCharacter: React.FC<Props> = ({ gameState, interaction }) => {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={{ transform: [{ translateY }, { scale }] }}>
+      <Animated.View style={{ transform: [{ translateY }, { scale }, { rotate: rotateInterpolate }] }}>
         <Image
           source={getImage()}
           style={styles.image}

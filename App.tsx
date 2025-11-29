@@ -11,7 +11,7 @@ import { RollingPin } from './src/components/RollingPin';
 
 export default function App() {
   const { gameState, feed, pourWater, swapLeaf, flatten, evolve, resetGame, isLoaded, STAGE_1_DURATION } = useGameState();
-  const [interaction, setInteraction] = useState<'feed' | 'play' | 'clean' | 'flatten' | null>(null);
+  const [interaction, setInteraction] = useState<string | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);
 
   // Check for evolution readiness
@@ -28,7 +28,18 @@ export default function App() {
 
   const handleFeed = useCallback((type: IngredientType, variant: IngredientVariant) => {
     feed(type, variant);
-    setInteraction('feed');
+
+    let animType = 'feed';
+    if (type === 'dough_modifier') {
+      if (variant === 'flour') animType = 'feed-flour';
+      else if (variant === 'water_drop') animType = 'feed-water';
+    } else if (type === 'spice') {
+      animType = 'feed-spice';
+    } else if (type === 'filling') {
+      animType = 'feed-filling';
+    }
+
+    setInteraction(animType as any);
     setTimeout(() => setInteraction(null), 2000);
   }, [feed]);
 
