@@ -6,10 +6,10 @@ interface Props {
   gameState: GameState;
 }
 
-const StatBar = ({ label, value, color }: { label: string; value: number; color: string }) => (
+const StatBar = ({ label, value, color, icon }: { label: string; value: number; color: string; icon?: string }) => (
   <View style={styles.statContainer}>
     <View style={styles.statHeader}>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statLabel}>{icon} {label}</Text>
       <Text style={styles.statValue}>{Math.round(value)}%</Text>
     </View>
     <View style={styles.barBackground}>
@@ -23,43 +23,57 @@ const StatBar = ({ label, value, color }: { label: string; value: number; color:
   </View>
 );
 
+const STAT_CONFIG = {
+  dough: {
+    moisture: { label: 'Hydration', color: '#3B82F6', icon: '💧' },
+    fullness: { label: 'Gluten', color: '#F97316', icon: '🍞' },
+    hygiene: { label: 'Smoothness', color: '#8B5CF6', icon: '✨' },
+  },
+  wrapper: {
+    moisture: { label: 'Pliability', color: '#14B8A6', icon: '🌊' },
+    fullness: { label: 'Stuffing', color: '#EF4444', icon: '🥩' },
+    hygiene: { label: 'Freshness', color: '#EC4899', icon: '🍃' }, // Changed from Flavor to Freshness to match hygiene decay logic better
+  },
+  dish: {
+    moisture: { label: 'Temp', color: '#F59E0B', icon: '🔥' },
+    fullness: { label: 'Satisfaction', color: '#10B981', icon: '😊' },
+    hygiene: { label: 'Aroma', color: '#F472B6', icon: '🌸' },
+  },
+  leftover: {
+    moisture: { label: 'Moisture', color: '#9CA3AF', icon: '💧' },
+    fullness: { label: 'Fullness', color: '#9CA3AF', icon: '🍖' },
+    hygiene: { label: 'Hygiene', color: '#9CA3AF', icon: '🧼' },
+  },
+};
+
 export const StatsDisplay: React.FC<Props> = ({ gameState }) => {
+  const stageConfig = STAT_CONFIG[gameState.stage] || STAT_CONFIG.dough;
+
   return (
     <View style={styles.container}>
-      {/* Moisture with Steam Zone indicator */}
-      <View style={styles.statContainer}>
-        <View style={styles.statHeader}>
-          <Text style={styles.statLabel}>Moisture (HP)</Text>
-          <Text style={styles.statValue}>{Math.round(gameState.moisture)}%</Text>
-        </View>
-        <View style={styles.barBackground}>
-          {/* Steam Zone Marker (40-80%) */}
-          <View
-            style={{
-              position: 'absolute',
-              left: '40%',
-              width: '40%', // 80 - 40 = 40%
-              height: '100%',
-              backgroundColor: 'rgba(59, 130, 246, 0.2)', // Light blue tint
-              zIndex: 1,
-            }}
-          />
-          <View
-            style={[
-              styles.barFill,
-              {
-                width: `${Math.max(0, Math.min(100, gameState.moisture))}%`,
-                backgroundColor: gameState.moisture < 40 ? '#EF4444' : gameState.moisture > 80 ? '#3B82F6' : '#10B981', // Red if low, Blue if high, Green if good
-                zIndex: 2,
-                opacity: 0.8,
-              }
-            ]}
-          />
-        </View>
-      </View>
+      {/* Moisture / Hydration / Pliability / Temp */}
+      <StatBar
+        label={stageConfig.moisture.label}
+        value={gameState.moisture}
+        color={stageConfig.moisture.color}
+        icon={stageConfig.moisture.icon}
+      />
 
-      <StatBar label="Fullness" value={gameState.fullness} color="#F97316" />
-      <StatBar label="Hygiene" value={gameState.hygiene} color="#8B5CF6" />
+      {/* Fullness / Gluten / Stuffing / Satisfaction */}
+      <StatBar
+        label={stageConfig.fullness.label}
+        value={gameState.fullness}
+        color={stageConfig.fullness.color}
+        icon={stageConfig.fullness.icon}
+      />
+
+      {/* Hygiene / Smoothness / Freshness / Aroma */}
+      <StatBar
+        label={stageConfig.hygiene.label}
+        value={gameState.hygiene}
+        color={stageConfig.hygiene.color}
+        icon={stageConfig.hygiene.icon}
+      />
     </View>
   );
 };
@@ -68,32 +82,34 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     paddingHorizontal: 32,
-    paddingVertical: 16,
+    paddingVertical: 8, // Reduced from 16
   },
   statContainer: {
-    marginBottom: 8,
+    marginBottom: 4, // Reduced from 8
     width: '100%',
   },
   statHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 2, // Reduced from 4
   },
   statLabel: {
     fontWeight: 'bold',
     color: '#374151',
+    fontSize: 12, // Smaller font
   },
   statValue: {
     color: '#6B7280',
+    fontSize: 12, // Smaller font
   },
   barBackground: {
-    height: 16,
+    height: 8, // Reduced from 16
     backgroundColor: '#E5E7EB',
-    borderRadius: 8,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    borderRadius: 8,
+    borderRadius: 4,
   },
 });
