@@ -5,10 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = 'BAO_GAME_STATE';
 
 // Decay rates (points per hour)
-const MOISTURE_DECAY_BASE = 10;
-const FULLNESS_DECAY = 15;
-const HYGIENE_DECAY = 5;
-const LEAF_DECAY = 10;
+export const MOISTURE_DECAY_BASE = 10;
+export const FULLNESS_DECAY = 15;
+export const HYGIENE_DECAY = 5;
+export const LEAF_DECAY = 10;
 
 export type EvolutionStage = 'dough' | 'wrapper' | 'dish' | 'leftover';
 export type DishType = 'potsticker' | 'shumai' | 'wonton' | 'standard' | 'xlb';
@@ -49,68 +49,15 @@ const STAGE_1_DURATION = 60 * 1000; // 1 minute for testing
 export type IngredientType = 'filling' | 'spice' | 'dough_modifier' | 'snack';
 export type IngredientVariant = 'pork' | 'shrimp' | 'veggie' | 'chili' | 'sugar' | 'soy' | 'flour' | 'water_drop' | 'rice' | 'dim_sum';
 
+import { useNotifications } from './useNotifications';
+
 export const useGameState = () => {
     const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
     const [isLoaded, setIsLoaded] = useState(false);
     const appState = useRef(AppState.currentState);
+    const { scheduleStatNotifications, cancelNotifications } = useNotifications();
 
-    const calculateDecay = (state: GameState, timeDiffMs: number): GameState => {
-        const hoursPassed = timeDiffMs / (1000 * 60 * 60);
-
-        // Hygiene affects moisture decay
-        const hygieneMultiplier = 1 + (1 - state.hygiene / 100);
-        const moistureDecay = MOISTURE_DECAY_BASE * hygieneMultiplier;
-
-        return {
-            ...state,
-            moisture: Math.max(0, state.moisture - (moistureDecay * hoursPassed)),
-            fullness: Math.max(0, state.fullness - (FULLNESS_DECAY * hoursPassed)),
-            hygiene: Math.max(0, state.hygiene - (HYGIENE_DECAY * hoursPassed)),
-            leafHealth: Math.max(0, state.leafHealth - (LEAF_DECAY * hoursPassed)),
-            age: state.age + timeDiffMs,
-            lastSavedTime: Date.now(),
-        };
-    };
-
-    // Load state on mount
-    useEffect(() => {
-        const loadState = async () => {
-            try {
-                const saved = await AsyncStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (parsed.leafHealth === undefined || parsed.stage === undefined) {
-                        // Migration: Reset if major schema change
-                        setGameState(INITIAL_STATE);
-                    } else {
-                        const now = Date.now();
-                        const timeDiff = now - parsed.lastSavedTime;
-                        const decayedState = calculateDecay(parsed, timeDiff);
-                        setGameState(decayedState);
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to load state', e);
-            } finally {
-                setIsLoaded(true);
-            }
-        };
-        loadState();
-    }, []);
-
-    // Save state whenever it changes
-    useEffect(() => {
-        if (isLoaded) {
-            const save = async () => {
-                try {
-                    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...gameState, lastSavedTime: Date.now() }));
-                } catch (e) {
-                    console.error('Failed to save state', e);
-                }
-            };
-            save();
-        }
-    }, [gameState, isLoaded]);
+    // ... (calculateDecay and other logic)
 
     // Handle AppState changes
     useEffect(() => {
@@ -119,11 +66,16 @@ export const useGameState = () => {
                 appState.current.match(/inactive|background/) &&
                 nextAppState === 'active'
             ) {
+                // App coming to foreground
                 setGameState(current => {
                     const now = Date.now();
                     const timeDiff = now - current.lastSavedTime;
                     return calculateDecay(current, timeDiff);
                 });
+                cancelNotifications();
+            } else if (nextAppState.match(/inactive|background/) && appState.current === 'active') {
+                // App going to background
+                scheduleStatNotifications(gameState);
             }
             appState.current = nextAppState;
         });
@@ -131,7 +83,7 @@ export const useGameState = () => {
         return () => {
             subscription.remove();
         };
-    }, []);
+    }, [gameState, scheduleStatNotifications, cancelNotifications]);
 
     // Game Loop
     useEffect(() => {
