@@ -9,10 +9,13 @@ import { Teapot } from './src/components/Teapot';
 import { EvolutionOverlay } from './src/components/EvolutionOverlay';
 import { RollingPin } from './src/components/RollingPin';
 
+import { StartupScreen } from './src/components/StartupScreen';
+
 export default function App() {
   const { gameState, feed, pourWater, swapLeaf, flatten, evolve, resetGame, isLoaded, STAGE_1_DURATION } = useGameState();
   const [interaction, setInteraction] = useState<string | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
   // Check for evolution readiness
   useEffect(() => {
@@ -71,6 +74,10 @@ export default function App() {
     );
   }
 
+  if (!gameStarted) {
+    return <StartupScreen onStart={() => setGameStarted(true)} />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -89,7 +96,7 @@ export default function App() {
 
         {/* Layer 2: Character */}
         {/* Map 'clean' interaction to 'sleep' for BaoCharacter compatibility if needed, or update BaoCharacter */}
-        <BaoCharacter gameState={gameState} interaction={interaction === 'clean' ? 'sleep' : interaction} />
+        <BaoCharacter gameState={gameState} interaction={interaction} />
 
         {/* Layer 3: Tools Overlay */}
         <View style={styles.toolsOverlay}>
