@@ -57,7 +57,63 @@ export const useGameState = () => {
     const appState = useRef(AppState.currentState);
     const { scheduleStatNotifications, cancelNotifications } = useNotifications();
 
-    // ... (calculateDecay and other logic)
+    const calculateDecay = (state: GameState, timeDiffMs: number): GameState => {
+        const hoursPassed = timeDiffMs / (1000 * 60 * 60);
+
+        // Hygiene affects moisture decay
+        const hygieneMultiplier = 1 + (1 - state.hygiene / 100);
+        const moistureDecay = MOISTURE_DECAY_BASE * hygieneMultiplier;
+
+        return {
+            ...state,
+            moisture: Math.max(0, state.moisture - (moistureDecay * hoursPassed)),
+            fullness: Math.max(0, state.fullness - (FULLNESS_DECAY * hoursPassed)),
+            hygiene: Math.max(0, state.hygiene - (HYGIENE_DECAY * hoursPassed)),
+            leafHealth: Math.max(0, state.leafHealth - (LEAF_DECAY * hoursPassed)),
+            age: state.age + timeDiffMs,
+            lastSavedTime: Date.now(),
+        };
+    };
+
+    // Load state on mount
+    useEffect(() => {
+        const loadState = async () => {
+            try {
+                const saved = await AsyncStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.leafHealth === undefined || parsed.stage === undefined) {
+                        // Migration: Reset if major schema change
+                        setGameState(INITIAL_STATE);
+                    } else {
+                        const now = Date.now();
+                        const timeDiff = now - parsed.lastSavedTime;
+                        const decayedState = calculateDecay(parsed, timeDiff);
+                        setGameState(decayedState);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load state', e);
+            } finally {
+                setIsLoaded(true);
+            }
+        };
+        loadState();
+    }, []);
+
+    // Save state whenever it changes
+    useEffect(() => {
+        if (isLoaded) {
+            const save = async () => {
+                try {
+                    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...gameState, lastSavedTime: Date.now() }));
+                } catch (e) {
+                    console.error('Failed to save state', e);
+                }
+            };
+            save();
+        }
+    }, [gameState, isLoaded]);
 
     // Handle AppState changes
     useEffect(() => {
